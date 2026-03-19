@@ -1,7 +1,9 @@
 import urllib.parse
+import json
+import os
 from xml.etree.ElementTree import Element
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Optional
 
 from consts import DATE_FORMAT, COLOR_MAP, TONALITY_MAP, COLOR_NAME_TO_RGB, CUE_COLORS, RGB_TO_CUE_TYPE
 
@@ -11,10 +13,109 @@ softType = Literal["traktor", "rekordbox"]
 original: softType
 target: softType
 
+# Custom color config storage
+_custom_color_config: Optional[dict] = None
+
 def set_conversion(o: softType, t: softType):
     global original, target
     original = o
     target = t
+
+
+def load_custom_color_config(config_path: str = None) -> dict:
+    """
+    Load custom color configuration from JSON file.
+    
+    Args:
+        config_path: Path to color_config.json. If None, looks for it in current directory.
+    
+    Returns:
+        Dictionary with custom color mappings or empty dict if file not found.
+    """
+    global _custom_color_config
+    
+    if _custom_color_config is not None:
+        return _custom_color_config
+    
+    if config_path is None:
+        # Look for color_config.json in script directory
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        config_path = os.path.join(script_dir, "color_config.json")
+    
+    try:
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                _custom_color_config = json.load(f)
+                print(f"✓ Loaded custom color config from {config_path}")
+                return _custom_color_config
+    except Exception as e:
+        print(f"⚠ Warning: Could not load color config: {e}")
+    
+    _custom_color_config = {}
+    return _custom_color_config
+
+
+def get_custom_track_color_map() -> dict:
+    """Get custom track color mappings from config."""
+    config = load_custom_color_config()
+    
+    base_map = config.get("trackColors", {}).get("traktorToRekordbox", {})
+    custom_map = config.get("_customMappings", {}).get("example_trackColors", {})
+    
+    # Merge base with custom (custom overrides base)
+    merged = {**COLOR_MAP}
+    
+    # Add/override from config
+    for traktor_num, rgb_hex in {**base_map, **custom_map}.items():
+        if traktor_num != "comment":
+            merged[rgb_hex] = str(traktor_num)
+    
+    return merged
+
+
+def get_custom_cue_colors() -> dict:
+    """Get custom cue color palette from config."""
+    config = load_custom_color_config()
+    
+    base_palette = config.get("cueColors", {}).get("palette", {})
+    custom_palette = config.get("_customMappings", {}).get("example_cueColors", {})
+    
+    # Merge base with custom
+    merged = {**COLOR_NAME_TO_RGB}
+    
+    for color_name, rgb_dict in {**base_palette, **custom_palette}.items():
+        if color_name != "comment" and isinstance(rgb_dict, dict):
+            merged[color_name] = {
+                "R": str(rgb_dict.get("R", 0)),
+                "G": str(rgb_dict.get("G", 0)),
+                "B": str(rgb_dict.get("B", 0))
+            }
+    
+    return merged
+
+
+def get_custom_rgb_to_cue_type() -> dict:
+    """Get custom RGB to cue type mappings from config."""
+    config = load_custom_color_config()
+    
+    mappings = config.get("cueColors", {}).get("cueTypeMapping", {}).get("mappings", {})
+    
+    # Merge with base
+    merged = {**RGB_TO_CUE_TYPE, **mappings}
+    
+    return merged
+
+
+def get_custom_semantic_mapping() -> dict:
+    """Get custom semantic cue name to color mappings from config."""
+    config = load_custom_color_config()
+    
+    mappings = config.get("cueColors", {}).get("semanticMapping", {}).get("mappings", {})
+    
+    # Merge with base
+    merged = {**CUE_COLORS, **mappings}
+    
+    return merged
 
 
 def get_attribute(element: Element, attribute):
@@ -46,13 +147,15 @@ def today():
 
 def _get_traktor_track_color(rgb_color):
     """Convert Rekordbox RGB color to Traktor color number."""
-    return COLOR_MAP.get(rgb_color, "")
+    color_map = get_custom_track_color_map()
+    return color_map.get(rgb_color, "")
 
 
 def _get_rekordbox_track_color(color_nb):
     """Convert Traktor color number to Rekordbox RGB color."""
+    color_map = get_custom_track_color_map()
     # Reverse lookup in the COLOR_MAP
-    for rgb, num in COLOR_MAP.items():
+    for rgb, num in color_map.items():
         if num == color_nb:
             return rgb
     return ""
@@ -179,8 +282,10 @@ def get_location(location):
 
 
 def map_to_color(ctype):
+    """Map cue type/name to a color using custom or default mapping."""
     ctype = str(ctype).lower().replace(" ", "").replace("-", "")
-    return CUE_COLORS.get(ctype, "blue")
+    semantic_map = get_custom_semantic_mapping()
+    return semantic_map.get(ctype, "blue")
 
 
 def color_distance(color1, color2):
@@ -208,11 +313,14 @@ def find_closest_color(target_rgb, color_map):
 
 
 def get_cue_color_values(r, g, b):
+    """Get cue type from RGB values using custom or default mapping."""
+    rgb_to_type = get_custom_rgb_to_cue_type()
     rgb_key = f"{r}-{g}-{b}"
-    if rgb_key in RGB_TO_CUE_TYPE:
-        return RGB_TO_CUE_TYPE[rgb_key]
+    
+    if rgb_key in rgb_to_type:
+        return rgb_to_type[rgb_key]
 
-    closest_type = find_closest_color((int(r), int(g), int(b)), RGB_TO_CUE_TYPE)
+    closest_type = find_closest_color((int(r), int(g), int(b)), rgb_to_type)
 
     return closest_type or "0"
 
@@ -224,11 +332,14 @@ def _set_traktor_cue_color(cue, r, g, b):
     return cue
 
 def _set_rekordbox_cue_color(cue, ctype, cname):
+    """Set Rekordbox cue color using custom or default palette."""
     if ctype == "0" and cname != "n.n.":
         ctype = cname
 
     color = map_to_color(ctype)
-    rgb = COLOR_NAME_TO_RGB.get(color, "")
+    color_palette = get_custom_cue_colors()
+    rgb = color_palette.get(color, {})
+    
     if rgb:
         cue.set("Red", rgb["R"])
         cue.set("Green", rgb["G"])

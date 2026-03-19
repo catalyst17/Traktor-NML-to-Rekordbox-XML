@@ -1,0 +1,99 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Traktor-Rekordbox Color Configuration",
+  "description": "Custom color mappings for tracks and cue points between Traktor and Rekordbox",
+  
+  "trackColors": {
+    "description": "RGB to Traktor color number mappings for track colors",
+    "traktorToRekordbox": {
+      "1": "0xFF0000",
+      "2": "0xFFA500",
+      "3": "0xFFFF00",
+      "4": "0x00FF00",
+      "5": "0x0000FF",
+      "6": "0x660099",
+      "7": "0xFF007F"
+    }
+  },
+  
+  "cueColors": {
+    "description": "Named color palette for cue points (Rekordbox style)",
+    "palette": {
+      "pink": { "R": 222, "G": 68, "B": 207 },
+      "orchidea": { "R": 180, "G": 50, "B": 255 },
+      "violet": { "R": 170, "G": 114, "B": 255 },
+      "mauve": { "R": 100, "G": 115, "B": 255 },
+      "blue": { "R": 48, "G": 90, "B": 255 },
+      "sky": { "R": 80, "G": 180, "B": 255 },
+      "cyan": { "R": 0, "G": 224, "B": 255 },
+      "turquoise": { "R": 31, "G": 163, "B": 146 },
+      "celadon": { "R": 16, "G": 177, "B": 118 },
+      "green": { "R": 40, "G": 226, "B": 20 },
+      "lime": { "R": 165, "G": 225, "B": 22 },
+      "kaki": { "R": 180, "G": 190, "B": 4 },
+      "yellow": { "R": 195, "G": 175, "B": 4 },
+      "orange": { "R": 224, "G": 100, "B": 27 },
+      "red": { "R": 230, "G": 40, "B": 40 },
+      "magenta": { "R": 255, "G": 18, "B": 123 }
+    },
+    
+    "cueTypeMapping": {
+      "description": "Map RGB colors to Traktor cue types",
+      "mappings": {
+        "222-68-207": "0",
+        "180-50-255": "0",
+        "170-114-255": "0",
+        "100-115-255": "0",
+        "48-90-255": "0",
+        "80-180-255": "0",
+        "0-224-255": "3",
+        "31-163-146": "3",
+        "16-177-118": "4",
+        "40-226-20": "5",
+        "165-225-22": "4",
+        "180-190-4": "4",
+        "195-175-4": "0",
+        "224-100-27": "5",
+        "230-40-40": "1",
+        "255-18-123": "2"
+      }
+    },
+    
+    "semanticMapping": {
+      "description": "Map semantic cue names to colors",
+      "mappings": {
+        "hotcue": "blue",
+        "fadein": "red",
+        "fadeout": "green",
+        "load": "cyan",
+        "grid": "lime",
+        "loop": "orange",
+        "start": "yellow",
+        "intro": "yellow",
+        "break": "turquoise",
+        "bridge": "turquoise",
+        "chorus": "pink",
+        "verse": "mauve",
+        "up": "celadon",
+        "buildup": "celadon",
+        "drop": "pink",
+        "down": "sky",
+        "outro": "violet",
+        "autogrid": "kaki"
+      }
+    }
+  },
+  
+  "_customMappings": {
+    "description": "User-defined custom color mappings (add your own here)",
+    "example_trackColors": {
+      "comment": "Add your custom track color mappings like this",
+      "8": "0xFFFFFF",
+      "9": "0x000000"
+    },
+    "example_cueColors": {
+      "comment": "Add your custom cue point colors like this",
+      "mycolor": { "R": 128, "G": 128, "B": 128 }
+    }
+  }
+}

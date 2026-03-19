@@ -378,19 +378,48 @@ class Traktor2Rekordbox:
 
 
 if __name__ == "__main__":
+    import argparse
+    
     set_conversion("traktor", "rekordbox")
-    if len(sys.argv) < 2:
+    
+    parser = argparse.ArgumentParser(
+        description="Convert Traktor NML playlists to Rekordbox XML format",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python nml_to_rekord.py collection.nml
+  python nml_to_rekord.py collection.nml --color-config my_colors.json
+        """
+    )
+    
+    parser.add_argument("nml_file", nargs='?', help="Path to Traktor NML file")
+    parser.add_argument(
+        "--color-config", "-c",
+        help="Path to custom color configuration JSON file",
+        default=None
+    )
+    
+    args = parser.parse_args()
+    
+    if not args.nml_file:
+        print("Usage: python nml_to_rekord.py collection.nml [--color-config colors.json]")
+        sys.exit(1)
+    
+    if not exists(args.nml_file):
+        print(f"Error: File not found: {args.nml_file}")
         print("Usage: python nml_to_rekord.py collection.nml")
-    else:
-        nml_file = sys.argv[1]
+        sys.exit(1)
 
-        if not exists(nml_file):
-            print("Usage: python nml_to_rekord.py collection.nml")
+    # Load custom color config if provided
+    if args.color_config:
+        from utils import load_custom_color_config
+        load_custom_color_config(args.color_config)
+        print(f"✓ Using custom color config: {args.color_config}")
+    
+    rekordbox_file = f"{''.join(args.nml_file.split('.')[:-1])}.xml"
+    open(rekordbox_file, "w").close()
 
-        rekordbox_file = f"{''.join(nml_file.split('.')[:-1])}.xml"
-        open(rekordbox_file, "w").close()
+    converter = Traktor2Rekordbox()
+    converter.convert_nml_to_xml(args.nml_file, rekordbox_file)
 
-        converter = Traktor2Rekordbox()
-        converter.convert_nml_to_xml(nml_file, rekordbox_file)
-
-        print(f"☕️ {nml_file} was converted to {rekordbox_file}!")
+    print(f"☕️ {args.nml_file} was converted to {rekordbox_file}!")

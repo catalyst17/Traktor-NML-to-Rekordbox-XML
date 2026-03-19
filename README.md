@@ -15,11 +15,12 @@ It keeps:
 - [x] Rekordbox XML <=> Traktor NML
 - [x] Playlist tree-structure
 - [x] Tracklist cue point analysis
+- [x] **Custom map for Cues and Tracks colors** ✨ NEW
+- [x] **Configurable color mappings via JSON** ✨ NEW
 
 ### To be added
 
 - [ ] Custom loop length for Traktor
-- [ ] Custom map for Cues and Tracks colors
 
 ## How to
 
@@ -36,6 +37,50 @@ It keeps:
 2. `python rekord_to_nml.py <path/to/your/collection>.xml`
 3. Open Traktor > Right-click on the Playlists > Import Playlist > Choose the `<outputed_collection>.nml` file
 4. Tada! 🥳
+
+## ✨ Custom Color Mappings (NEW)
+
+You can now customize how colors are mapped between Traktor and Rekordbox!
+
+### Quick Start
+
+```bash
+# Use default colors (automatic)
+python nml_to_rekord.py collection.nml
+
+# Use custom color config
+python nml_to_rekord.py collection.nml --color-config my_colors.json
+```
+
+### Creating Custom Color Mappings
+
+1. Copy `color_config.json` to `my_colors.json`
+2. Edit the `_customMappings` section:
+
+```json
+{
+  "_customMappings": {
+    "example_trackColors": {
+      "8": "0x808080",
+      "9": "0x000000"
+    },
+    "example_cueColors": {
+      "mycolor": { "R": 128, "G": 128, "B": 128 }
+    }
+  }
+}
+```
+
+3. Use your config: `python nml_to_rekord.py collection.nml -c my_colors.json`
+
+### What You Can Customize
+
+- **Track Colors**: RGB hex values for Traktor color numbers
+- **Cue Point Colors**: Named color palette (pink, blue, green, etc.)
+- **Semantic Mappings**: Map cue names like "intro", "drop", "outro" to colors
+- **RGB to Cue Type**: Map specific RGB values to Traktor cue types
+
+See `color_config.json` for full documentation and examples.
 
 ## Links
 - [Traktor NML utils library](https://pypi.org/project/traktor-nml-utils/)
