@@ -1,7 +1,9 @@
 import urllib.parse
+import json
+import os
 from xml.etree.ElementTree import Element
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Optional
 
 from consts import DATE_FORMAT, COLOR_MAP, TONALITY_MAP, COLOR_NAME_TO_RGB, CUE_COLORS, RGB_TO_CUE_TYPE
 
@@ -10,6 +12,9 @@ softType = Literal["traktor", "rekordbox"]
 # VARIABLES TO BE DEFINED BY SPECIFIC SCRIPTS
 original: softType
 target: softType
+
+# Custom loop config storage
+_custom_loop_config: Optional[dict] = None
 
 def set_conversion(o: softType, t: softType):
     global original, target
@@ -243,3 +248,99 @@ def set_cue_color(cue, **kwargs):
         ctype, cname = kwargs.get("ctype"), kwargs.get("cname")
         return _set_rekordbox_cue_color(cue, ctype, cname)
     return cue
+
+
+def load_loop_length_config(config_path: str = None) -> dict:
+    """
+    Load custom loop length configuration from JSON file.
+    
+    Args:
+        config_path: Path to loop_config.json. If None, looks for it in current directory.
+    
+    Returns:
+        Dictionary with loop length mappings or empty dict if file not found.
+    """
+    global _custom_loop_config
+    
+    if _custom_loop_config is not None:
+        return _custom_loop_config
+    
+    if config_path is None:
+        # Look for loop_config.json in script directory
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        config_path = os.path.join(script_dir, "loop_config.json")
+    
+    try:
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                _custom_loop_config = json.load(f)
+                if _custom_loop_config.get("loopLengthMappings", {}).get("enabled", False):
+                    print(f"✓ Loaded loop length config from {config_path}")
+                return _custom_loop_config
+    except Exception as e:
+        print(f"⚠ Warning: Could not load loop config: {e}")
+    
+    _custom_loop_config = {}
+    return _custom_loop_config
+
+
+def transform_loop_length(loop_length_ms: float, bpm: float) -> float:
+    """
+    Transform loop length based on custom configuration.
+    
+    Args:
+        loop_length_ms: Original loop length in milliseconds
+        bpm: Track BPM for calculating bars/beats
+    
+    Returns:
+        Transformed loop length in milliseconds, or original if no transformation applies
+    """
+    config = load_loop_length_config()
+    
+    mappings = config.get("loopLengthMappings", {})
+    
+    if not mappings.get("enabled", False):
+        return loop_length_ms
+    
+    # Calculate beat duration in milliseconds
+    beat_duration_ms = (60000.0 / bpm) if bpm > 0 else 500.0  # Default to 120 BPM
+    
+    # Calculate loop length in beats
+    loop_beats = loop_length_ms / beat_duration_ms
+    
+    # Calculate loop length in bars (assuming 4 beats per bar)
+    loop_bars = loop_beats / 4.0
+    
+    # Check custom rules first
+    custom_rules = mappings.get("customRules", {})
+    multiply_factor = custom_rules.get("multiplyAll")
+    divide_factor = custom_rules.get("divideAll")
+    
+    if multiply_factor:
+        return loop_length_ms * float(multiply_factor)
+    
+    if divide_factor and divide_factor != 0:
+        return loop_length_ms / float(divide_factor)
+    
+    # Check beat mappings (more precise)
+    beat_mappings = mappings.get("beatMappings", {}).get("mappings", {})
+    loop_beats_rounded = round(loop_beats, 3)
+    
+    for source_beats_str, target_beats in beat_mappings.items():
+        source_beats = float(source_beats_str)
+        # Allow small tolerance for floating point comparison
+        if abs(loop_beats_rounded - source_beats) < 0.1:
+            return target_beats * beat_duration_ms
+    
+    # Check bar mappings
+    bar_mappings = mappings.get("barMappings", {}).get("mappings", {})
+    loop_bars_rounded = round(loop_bars, 3)
+    
+    for source_bars_str, target_bars in bar_mappings.items():
+        source_bars = float(source_bars_str)
+        # Allow small tolerance for floating point comparison
+        if abs(loop_bars_rounded - source_bars) < 0.1:
+            return target_bars * 4.0 * beat_duration_ms
+    
+    # No transformation applies, return original
+    return loop_length_ms

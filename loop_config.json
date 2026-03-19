@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Loop Length Configuration",
+  "description": "Custom loop length transformations for Rekordbox to Traktor conversion",
+  
+  "loopLengthMappings": {
+    "description": "Transform loop lengths during conversion. Keys are source lengths (in bars), values are target lengths.",
+    "enabled": false,
+    "comment": "Set enabled to true to activate loop transformations",
+    
+    "barMappings": {
+      "description": "Map loop lengths in bars (assumes 4 beats per bar)",
+      "comment": "Example: '4': 8 means all 4-bar loops become 8-bar loops",
+      "mappings": {
+        "0.125": 0.25,
+        "0.25": 0.5,
+        "0.5": 1,
+        "1": 2,
+        "2": 4,
+        "4": 8,
+        "8": 16,
+        "16": 32,
+        "32": 64
+      }
+    },
+    
+    "beatMappings": {
+      "description": "Map loop lengths in beats (more precise control)",
+      "comment": "Takes precedence over barMappings if both match",
+      "mappings": {
+        "1": 2,
+        "2": 4,
+        "4": 8,
+        "8": 16,
+        "16": 32,
+        "32": 64
+      }
+    },
+    
+    "customRules": {
+      "description": "Advanced loop transformation rules",
+      "multiplyAll": null,
+      "divideAll": null,
+      "comment": "multiplyAll: 2 doubles all loop lengths, divideAll: 2 halves them"
+    }
+  },
+  
+  "examples": {
+    "doubleAllLoops": {
+      "enabled": true,
+      "customRules": {
+        "multiplyAll": 2
+      }
+    },
+    
+    "halveAllLoops": {
+      "enabled": true,
+      "customRules": {
+        "divideAll": 2
+      }
+    },
+    
+    "specificMappings": {
+      "enabled": true,
+      "barMappings": {
+        "mappings": {
+          "4": 8,
+          "8": 16
+        }
+      }
+    }
+  }
+}

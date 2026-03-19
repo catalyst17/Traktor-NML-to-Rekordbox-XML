@@ -17,6 +17,7 @@ from utils import (
     get_location,
     set_cue_color,
     today,
+    transform_loop_length,
 )
 
 
@@ -161,7 +162,9 @@ class Rekordbox2Traktor:
         start_ms = self.sec_2_ms(start_sec)
         loop_length = 0
         if end_sec:
-            loop_length = self.sec_2_ms(end_sec) - start_ms
+            original_loop_length = self.sec_2_ms(end_sec) - start_ms
+            # Apply loop length transformation if configured
+            loop_length = transform_loop_length(original_loop_length, self.track_info['bpm'])
 
         hotcue = num if num and num != "-1" else str(self.cue_index)
 

@@ -15,10 +15,10 @@ It keeps:
 - [x] Rekordbox XML <=> Traktor NML
 - [x] Playlist tree-structure
 - [x] Tracklist cue point analysis
+- [x] **Custom loop length for Traktor** ✨ NEW
 
 ### To be added
 
-- [ ] Custom loop length for Traktor
 - [ ] Custom map for Cues and Tracks colors
 
 ## How to
@@ -36,6 +36,75 @@ It keeps:
 2. `python rekord_to_nml.py <path/to/your/collection>.xml`
 3. Open Traktor > Right-click on the Playlists > Import Playlist > Choose the `<outputed_collection>.nml` file
 4. Tada! 🥳
+
+## ✨ Custom Loop Lengths (NEW)
+
+Transform loop lengths during Rekordbox → Traktor conversion!
+
+### Quick Start
+
+```bash
+# Default (no transformation)
+python rekord_to_nml.py collection.xml
+
+# With custom loop config (when enabled in loop_config.json)
+# Just place loop_config.json in the same directory
+```
+
+### Configuration
+
+Edit `loop_config.json` and set `"enabled": true`:
+
+#### Double All Loops
+```json
+{
+  "loopLengthMappings": {
+    "enabled": true,
+    "customRules": {
+      "multiplyAll": 2
+    }
+  }
+}
+```
+
+#### Specific Bar Mappings
+```json
+{
+  "loopLengthMappings": {
+    "enabled": true,
+    "barMappings": {
+      "mappings": {
+        "4": 8,
+        "8": 16
+      }
+    }
+  }
+}
+```
+
+#### Beat-Based Precision
+```json
+{
+  "loopLengthMappings": {
+    "enabled": true,
+    "beatMappings": {
+      "mappings": {
+        "16": 32,
+        "32": 64
+      }
+    }
+  }
+}
+```
+
+### Features
+- **Bar mappings**: Transform by musical bars (4→8, 8→16)
+- **Beat mappings**: Precise beat-level control
+- **Global rules**: Double or halve ALL loops
+- **BPM-aware**: Automatically calculates based on track tempo
+- **Disabled by default**: No changes unless you enable it
+
+See `loop_config.json` for full documentation and examples.
 
 ## Links
 - [Traktor NML utils library](https://pypi.org/project/traktor-nml-utils/)
